@@ -1,0 +1,479 @@
+---
+import '../styles/global.css';
+
+const API_BASE_URL = import.meta.env.PUBLIC_API_URL || "http://localhost:8000";
+---
+
+<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Todo List Manager</title>
+    <meta name="description" content="Organiza tus tareas eficientemente con nuestra hermosa app de todos">
+    <!-- Added Google Fonts for typography -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Space+Grotesk:wght@400;500;600;700&family=DM+Sans:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body class="gradient-bg min-h-screen">
+<div id="app">
+    <div class="container mx-auto px-4 py-12 max-w-5xl">
+        <!-- Enhanced header with better typography and spacing -->
+        <div class="mb-12 text-center">
+            <h1 class="text-5xl font-bold font-heading text-foreground mb-4 bg-gradient-to-r from-primary to-accent bg-clip-text text-transparent">
+                Todo List Manager
+            </h1>
+            <p class="text-muted-foreground text-xl max-w-2xl mx-auto leading-relaxed">
+                Organiza tus tareas eficientemente con nuestra hermosa aplicación de gestión de todos
+            </p>
+        </div>
+
+        <!-- Loading State -->
+        <div id="loading" class="min-h-[60vh] flex items-center justify-center">
+            <div class="text-center">
+                <!-- Enhanced loading spinner with better styling -->
+                <div class="relative">
+                    <div class="animate-spin rounded-full h-16 w-16 border-4 border-muted border-t-primary mx-auto mb-6"></div>
+                    <div class="absolute inset-0 rounded-full h-16 w-16 border-4 border-transparent border-t-accent animate-spin mx-auto" style="animation-delay: -0.5s;"></div>
+                </div>
+                <p class="text-muted-foreground text-lg">Cargando todos...</p>
+            </div>
+        </div>
+
+        <!-- Main App (hidden initially) -->
+        <div id="main-app" class="hidden">
+            <!-- Enhanced controls section with better spacing and styling -->
+            <div class="card p-6 mb-8">
+                <div class="flex flex-col lg:flex-row gap-4">
+                    <div class="relative flex-1">
+                        <svg class="absolute left-4 top-1/2 transform -translate-y-1/2 text-muted-foreground h-5 w-5" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="m21 21-6-6m2-5a7 7 0 1 1-14 0 7 7 0 0 1 14 0Z"/>
+                        </svg>
+                        <input
+                                id="search"
+                                type="text"
+                                placeholder="Buscar todos..."
+                                class="input pl-12"
+                        />
+                    </div>
+                    <select id="filter" class="select w-full lg:w-48">
+                        <option value="all">📋 Todas las Tareas</option>
+                        <option value="pending">⏳ Pendientes</option>
+                        <option value="completed">✅ Completadas</option>
+                    </select>
+                    <button id="add-todo-btn" class="btn btn-primary w-full lg:w-auto">
+                        <svg class="h-5 w-5 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                        </svg>
+                        Agregar Todo
+                    </button>
+                </div>
+            </div>
+
+            <!-- Enhanced stats section with better visual hierarchy -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-6 mb-8">
+                <div class="stats-card">
+                    <div class="flex items-center justify-center w-12 h-12 bg-primary/10 rounded-full mx-auto mb-3">
+                        <svg class="w-6 h-6 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                        </svg>
+                    </div>
+                    <div id="total-count" class="text-3xl font-bold font-heading text-primary mb-1">0</div>
+                    <p class="text-sm text-muted-foreground font-medium">Total de Tareas</p>
+                </div>
+                <div class="stats-card">
+                    <div class="flex items-center justify-center w-12 h-12 bg-emerald-100 rounded-full mx-auto mb-3">
+                        <svg class="w-6 h-6 text-emerald-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div id="completed-count" class="text-3xl font-bold font-heading text-emerald-600 mb-1">0</div>
+                    <p class="text-sm text-muted-foreground font-medium">Completadas</p>
+                </div>
+                <div class="stats-card">
+                    <div class="flex items-center justify-center w-12 h-12 bg-amber-100 rounded-full mx-auto mb-3">
+                        <svg class="w-6 h-6 text-amber-600" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4l3 3m6-3a9 9 0 11-18 0 9 9 0 0118 0z"/>
+                        </svg>
+                    </div>
+                    <div id="pending-count" class="text-3xl font-bold font-heading text-amber-600 mb-1">0</div>
+                    <p class="text-sm text-muted-foreground font-medium">Pendientes</p>
+                </div>
+            </div>
+
+            <!-- Todo List -->
+            <div id="todo-list" class="space-y-4">
+                <!-- Todos will be rendered here -->
+            </div>
+        </div>
+    </div>
+</div>
+
+<!-- Enhanced dialog with better styling and animations -->
+<div id="todo-dialog" class="dialog-overlay hidden">
+    <div class="dialog-content">
+        <div class="flex items-center gap-3 mb-6">
+            <div class="flex items-center justify-center w-10 h-10 bg-primary/10 rounded-full">
+                <svg class="w-5 h-5 text-primary" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                    <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 4v16m8-8H4"/>
+                </svg>
+            </div>
+            <h2 id="dialog-title" class="text-xl font-bold font-heading text-foreground">Agregar Nuevo Todo</h2>
+        </div>
+        <div class="space-y-5">
+            <div>
+                <label for="todo-title" class="block text-sm font-semibold text-foreground mb-2">Título</label>
+                <input id="todo-title" type="text" placeholder="Ingresa el título del todo..." class="input" />
+            </div>
+            <div>
+                <label for="todo-description" class="block text-sm font-semibold text-foreground mb-2">Descripción</label>
+                <textarea id="todo-description" placeholder="Ingresa la descripción del todo..." rows="3" class="textarea"></textarea>
+            </div>
+            <div>
+                <label for="todo-priority" class="block text-sm font-semibold text-foreground mb-2">Prioridad</label>
+                <select id="todo-priority" class="select">
+                    <option value="low">🟢 Baja</option>
+                    <option value="medium" selected>🟡 Media</option>
+                    <option value="high">🔴 Alta</option>
+                </select>
+            </div>
+            <div id="completed-checkbox-container" class="flex items-center space-x-3 hidden">
+                <input type="checkbox" id="todo-completed" class="checkbox" />
+                <label for="todo-completed" class="text-sm font-medium text-foreground">Marcar como completado</label>
+            </div>
+            <div class="flex gap-3 pt-4">
+                <button id="save-todo-btn" class="btn btn-primary flex-1">Guardar Todo</button>
+                <button id="cancel-todo-btn" class="btn btn-secondary">Cancelar</button>
+            </div>
+        </div>
+    </div>
+</div>
+
+<script define:vars={{ API_BASE_URL }}>
+    let todos = [];
+    let currentFilter = "all";
+    let searchTerm = "";
+    let editingTodo = null;
+
+    // DOM elements
+    const loadingEl = document.getElementById('loading');
+    const mainAppEl = document.getElementById('main-app');
+    const todoListEl = document.getElementById('todo-list');
+    const searchEl = document.getElementById('search');
+    const filterEl = document.getElementById('filter');
+    const addTodoBtnEl = document.getElementById('add-todo-btn');
+    const todoDialogEl = document.getElementById('todo-dialog');
+    const dialogTitleEl = document.getElementById('dialog-title');
+    const todoTitleEl = document.getElementById('todo-title');
+    const todoDescriptionEl = document.getElementById('todo-description');
+    const todoPriorityEl = document.getElementById('todo-priority');
+    const todoCompletedEl = document.getElementById('todo-completed');
+    const completedCheckboxContainer = document.getElementById('completed-checkbox-container');
+    const saveTodoBtnEl = document.getElementById('save-todo-btn');
+    const cancelTodoBtnEl = document.getElementById('cancel-todo-btn');
+    const totalCountEl = document.getElementById('total-count');
+    const completedCountEl = document.getElementById('completed-count');
+    const pendingCountEl = document.getElementById('pending-count');
+
+    // Utility functions
+    function showToast(title, description, variant = 'default') {
+        const toast = document.createElement('div');
+        toast.className = `fixed top-6 right-6 z-50 p-4 rounded-xl shadow-2xl transition-all duration-500 transform translate-x-full max-w-sm border ${
+            variant === 'destructive'
+                ? 'bg-red-50 text-red-800 border-red-200'
+                : 'bg-emerald-50 text-emerald-800 border-emerald-200'
+        }`;
+        toast.innerHTML = `
+                <div class="flex items-start gap-3">
+                    <div class="flex-shrink-0">
+                        ${variant === 'destructive'
+            ? '<svg class="w-5 h-5 text-red-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 8v4m0 4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+            : '<svg class="w-5 h-5 text-emerald-500" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+        }
+                    </div>
+                    <div>
+                        <div class="font-semibold text-sm">${title}</div>
+                        <div class="text-xs mt-1 opacity-80">${description}</div>
+                    </div>
+                </div>
+            `;
+        document.body.appendChild(toast);
+
+        // Animate in
+        setTimeout(() => toast.style.transform = 'translateX(0)', 100);
+
+        // Animate out
+        setTimeout(() => {
+            toast.style.transform = 'translateX(100%)';
+            setTimeout(() => toast.remove(), 300);
+        }, 4000);
+    }
+
+    function getPriorityBadgeClass(priority) {
+        switch (priority) {
+            case 'high': return 'badge badge-high';
+            case 'medium': return 'badge badge-medium';
+            case 'low': return 'badge badge-low';
+            default: return 'badge badge-low';
+        }
+    }
+
+    function getPriorityText(priority) {
+        switch (priority) {
+            case 'high': return 'Alta';
+            case 'medium': return 'Media';
+            case 'low': return 'Baja';
+            default: return 'Baja';
+        }
+    }
+
+    // API functions
+    async function fetchTodos() {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/todo/`);
+            if (!response.ok) throw new Error('Failed to fetch todos');
+            todos = await response.json();
+            renderTodos();
+            updateStats();
+        } catch (error) {
+            showToast('Error', 'Error al cargar los todos. Verifica la conexión con la API.', 'destructive');
+        } finally {
+            loadingEl.classList.add('hidden');
+            mainAppEl.classList.remove('hidden');
+        }
+    }
+
+    async function createTodo(todoData) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/todo/`, {
+                method: 'POST',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(todoData)
+            });
+            if (!response.ok) throw new Error('Failed to create todo');
+            await fetchTodos();
+            showToast('Éxito', 'Todo creado exitosamente!');
+        } catch (error) {
+            showToast('Error', 'Error al crear el todo', 'destructive');
+        }
+    }
+
+    async function updateTodo(id, updates) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/todo/${id}`, {
+                method: 'PATCH',
+                headers: { 'Content-Type': 'application/json' },
+                body: JSON.stringify(updates)
+            });
+            if (!response.ok) throw new Error('Failed to update todo');
+            await fetchTodos();
+            showToast('Éxito', 'Todo actualizado exitosamente!');
+        } catch (error) {
+            showToast('Error', 'Error al actualizar el todo', 'destructive');
+        }
+    }
+
+    async function deleteTodo(id) {
+        try {
+            const response = await fetch(`${API_BASE_URL}/api/v1/todo/${id}`, {
+                method: 'DELETE'
+            });
+            if (!response.ok) throw new Error('Failed to delete todo');
+            await fetchTodos();
+            showToast('Éxito', 'Todo eliminado exitosamente!');
+        } catch (error) {
+            showToast('Error', 'Error al eliminar el todo', 'destructive');
+        }
+    }
+
+    // Render functions
+    function renderTodos() {
+        const filteredTodos = todos.filter(todo => {
+            const matchesSearch = todo.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                (todo.description && todo.description.toLowerCase().includes(searchTerm.toLowerCase()));
+            const isCompleted = todo.status === "completed";
+            const matchesFilter = currentFilter === 'all' ||
+                (currentFilter === 'completed' && isCompleted) ||
+                (currentFilter === 'pending' && !isCompleted);
+            return matchesSearch && matchesFilter;
+        });
+
+        if (filteredTodos.length === 0) {
+            todoListEl.innerHTML = `
+                    <div class="card p-12 text-center">
+                        <div class="w-16 h-16 bg-muted rounded-full flex items-center justify-center mx-auto mb-4">
+                            <svg class="w-8 h-8 text-muted-foreground" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5H7a2 2 0 00-2 2v10a2 2 0 002 2h8a2 2 0 002-2V7a2 2 0 00-2-2h-2M9 5a2 2 0 002 2h2a2 2 0 002-2M9 5a2 2 0 012-2h2a2 2 0 012 2"/>
+                            </svg>
+                        </div>
+                        <h3 class="text-lg font-semibold text-foreground mb-2">
+                            ${searchTerm || currentFilter !== 'all'
+                ? 'No hay todos que coincidan'
+                : 'No hay todos aún'}
+                        </h3>
+                        <p class="text-muted-foreground">
+                            ${searchTerm || currentFilter !== 'all'
+                ? 'Intenta ajustar tus filtros de búsqueda'
+                : '¡Crea tu primer todo para comenzar!'}
+                        </p>
+                    </div>
+                `;
+            return;
+        }
+
+        todoListEl.innerHTML = filteredTodos.map(todo => {
+            const title = todo.title;
+            const description = todo.description || '';
+            const priority = todo.priority || 'low';
+            const completed = todo.status === 'completed';
+            const id = todo._id || todo.id;
+
+            return `
+                    <div class="card transition-all duration-300 hover:shadow-xl ${completed ? 'opacity-60' : ''} group">
+                        <div class="p-6">
+                            <div class="flex items-start gap-4">
+                                <button onclick="toggleComplete('${id}')" class="mt-1 text-primary hover:text-primary/80 transition-all duration-200 hover:scale-110">
+                                    ${completed
+                ? '<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z"/></svg>'
+                : '<svg class="h-6 w-6" fill="none" stroke="currentColor" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/></svg>'
+            }
+                                </button>
+                                <div class="flex-1 min-w-0">
+                                    <div class="flex items-start justify-between gap-3 mb-3">
+                                        <h3 class="font-semibold text-lg text-foreground ${completed ? 'line-through' : ''} group-hover:text-primary transition-colors">
+                                            ${title}
+                                        </h3>
+                                        <div class="flex items-center gap-2 flex-shrink-0">
+                                            <span class="${getPriorityBadgeClass(priority)}">${getPriorityText(priority)}</span>
+                                            <div class="flex gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                                                <button onclick="editTodo('${id}')" class="btn btn-ghost p-2 hover:bg-primary/10">
+                                                    <svg class="h-4 w-4" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 5H6a2 2 0 00-2 2v11a2 2 0 002 2h11a2 2 0 002-2v-5m-1.414-9.414a2 2 0 112.828 2.828L11.828 15H9v-2.828l8.586-8.586z"/>
+                                                    </svg>
+                                                </button>
+                                                <button onclick="deleteTodoConfirm('${id}')" class="btn btn-ghost p-2 hover:bg-red-50">
+                                                    <svg class="h-4 w-4 text-destructive" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                                                        <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"/>
+                                                    </svg>
+                                                </button>
+                                            </div>
+                                        </div>
+                                    </div>
+                                    ${description ? `
+                                        <p class="text-muted-foreground leading-relaxed ${completed ? 'line-through' : ''}">
+                                            ${description}
+                                        </p>
+                                    ` : ''}
+                                </div>
+                            </div>
+                        </div>
+                    </div>
+                `;
+        }).join('');
+    }
+
+    function updateStats() {
+        totalCountEl.textContent = todos.length;
+        completedCountEl.textContent = todos.filter(t => t.status === 'completed').length;
+        pendingCountEl.textContent = todos.filter(t => t.status !== 'completed').length;
+    }
+
+    // Event handlers
+    function openDialog(isEdit = false) {
+        dialogTitleEl.textContent = isEdit ? 'Editar Todo' : 'Agregar Nuevo Todo';
+        completedCheckboxContainer.classList.toggle('hidden', !isEdit);
+        todoDialogEl.classList.remove('hidden');
+    }
+
+    function closeDialog() {
+        todoDialogEl.classList.add('hidden');
+        editingTodo = null;
+        todoTitleEl.value = '';
+        todoDescriptionEl.value = '';
+        todoPriorityEl.value = 'medium';
+        todoCompletedEl.checked = false;
+    }
+
+    function saveTodo() {
+        const title = todoTitleEl.value.trim();
+        if (!title) {
+            showToast('Error', 'El título es requerido', 'destructive');
+            return;
+        }
+
+        // Objeto base sin el status
+        const todoData = {
+            title: title,
+            description: todoDescriptionEl.value.trim(),
+            priority: todoPriorityEl.value,
+        };
+
+        if (editingTodo) {
+            // CORRECCIÓN: Si estamos editando, añadimos la propiedad 'status' como string
+            todoData.status = todoCompletedEl.checked ? 'completed' : 'pending';
+            updateTodo(editingTodo._id || editingTodo.id, todoData);
+        } else {
+            // Al crear, no enviamos 'status', la API le asignará "pending"
+            createTodo(todoData);
+        }
+        closeDialog();
+    }
+
+    async function toggleComplete(id) {
+        const todo = todos.find(t => (t._id || t.id) === id);
+        if (todo) {
+            // CORRECCIÓN: Alternar el valor del string 'status'
+            const newStatus = todo.status === 'completed' ? 'pending' : 'completed';
+            await updateTodo(id, { status: newStatus });
+        }
+    }
+
+    function editTodo(id) {
+        const todo = todos.find(t => (t._id || t.id) === id);
+        if (todo) {
+            editingTodo = todo;
+            todoTitleEl.value = todo.title;
+            todoDescriptionEl.value = todo.description || '';
+            todoPriorityEl.value = todo.priority || 'medium';
+            todoCompletedEl.checked = todo.status === 'completed';
+            openDialog(true);
+        }
+    }
+
+    function deleteTodoConfirm(id) {
+        if (confirm('¿Estás seguro de que quieres eliminar este todo?')) {
+            deleteTodo(id);
+        }
+    }
+
+    // Event listeners
+    searchEl.addEventListener('input', (e) => {
+        searchTerm = e.target.value;
+        renderTodos();
+    });
+
+    filterEl.addEventListener('change', (e) => {
+        currentFilter = e.target.value;
+        renderTodos();
+    });
+
+    addTodoBtnEl.addEventListener('click', () => openDialog());
+    cancelTodoBtnEl.addEventListener('click', closeDialog);
+    saveTodoBtnEl.addEventListener('click', saveTodo);
+
+    // Close dialog when clicking outside
+    todoDialogEl.addEventListener('click', (e) => {
+        if (e.target === todoDialogEl) closeDialog();
+    });
+
+    // Make functions global for onclick handlers
+    window.toggleComplete = toggleComplete;
+    window.editTodo = editTodo;
+    window.deleteTodoConfirm = deleteTodoConfirm;
+
+    // Initialize app
+    fetchTodos();
+</script>
+</body>
+</html>
